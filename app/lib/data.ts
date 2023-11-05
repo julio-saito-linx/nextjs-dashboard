@@ -10,6 +10,9 @@ import {
 } from './definitions'
 import { formatCurrency } from './utils'
 
+export const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`
+export const customerCountPromise = sql`SELECT COUNT(*) FROM customers`
+
 export async function fetchRevenue() {
 	// Add noStore() here prevent the response from being cached.
 	// This is equivalent to in fetch(..., {cache: 'no-store'}).
@@ -35,11 +38,11 @@ export async function fetchRevenue() {
 export async function fetchLatestInvoices() {
 	try {
 		const data = await sql<LatestInvoiceRaw>`
-      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      ORDER BY invoices.date DESC
-      LIMIT 5`
+			SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
+			FROM invoices
+			JOIN customers ON invoices.customer_id = customers.id
+			ORDER BY invoices.date DESC
+			LIMIT 5`
 
 		const latestInvoices = data.rows.map((invoice) => ({
 			...invoice,
@@ -64,17 +67,22 @@ export async function fetchCardData() {
          SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
          FROM invoices`
 
-		const data = await Promise.all([
-			invoiceCountPromise,
-			customerCountPromise,
-			invoiceStatusPromise,
-		])
+		const [invoiceCountResult, customerCountResult, invoiceStatusResult] =
+			await Promise.all([
+				invoiceCountPromise,
+				customerCountPromise,
+				invoiceStatusPromise,
+			])
 
-		const numberOfInvoices = Number(data[0].rows[0].count ?? '0')
-		const numberOfCustomers = Number(data[1].rows[0].count ?? '0')
-		const totalPaidInvoices = formatCurrency(data[2].rows[0].paid ?? '0')
+		const numberOfInvoices = Number(invoiceCountResult.rows[0].count ?? '0')
+		const numberOfCustomers = Number(
+			customerCountResult.rows[0].count ?? '0'
+		)
+		const totalPaidInvoices = formatCurrency(
+			invoiceStatusResult.rows[0].paid ?? '0'
+		)
 		const totalPendingInvoices = formatCurrency(
-			data[2].rows[0].pending ?? '0'
+			invoiceStatusResult.rows[0].pending ?? '0'
 		)
 
 		return {
