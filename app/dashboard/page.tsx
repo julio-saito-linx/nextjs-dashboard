@@ -10,9 +10,11 @@ import {
 
 export default async function Page() {
 	// server-side data fetching
-	const revenue = await fetchRevenue()
-	const latestInvoices = await fetchLatestInvoices()
-	const cardData = await fetchCardData()
+	const [revenue, latestInvoices, cardData] = await Promise.all([
+		fetchRevenue(),
+		fetchLatestInvoices(),
+		fetchCardData(),
+	])
 
 	return (
 		<main>

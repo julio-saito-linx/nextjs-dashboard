@@ -9,6 +9,7 @@ import {
 	Revenue,
 } from './definitions'
 import { formatCurrency } from './utils'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`
 export const customerCountPromise = sql`SELECT COUNT(*) FROM customers`
@@ -16,17 +17,25 @@ export const customerCountPromise = sql`SELECT COUNT(*) FROM customers`
 export async function fetchRevenue() {
 	// Add noStore() here prevent the response from being cached.
 	// This is equivalent to in fetch(..., {cache: 'no-store'}).
+	noStore()
 
 	try {
 		// Artificially delay a reponse for demo purposes.
 		// Don't do this in real life :)
-
-		// console.log('Fetching revenue data...');
-		// await new Promise((resolve) => setTimeout(resolve, 3000));
-
+		performance.mark('start-fetch-revenue')
+		await new Promise((resolve) => setTimeout(resolve, 3000))
 		const data = await sql<Revenue>`SELECT * FROM revenue`
+		performance.mark('end-fetch-revenue')
 
-		// console.log('Data fetch complete after 3 seconds.');
+		console.log(
+			`fetchRevenue took ${
+				performance.measure(
+					'fetch-revenue',
+					'start-fetch-revenue',
+					'end-fetch-revenue'
+				).duration
+			}ms`
+		)
 
 		return data.rows
 	} catch (error) {
@@ -36,13 +45,25 @@ export async function fetchRevenue() {
 }
 
 export async function fetchLatestInvoices() {
+	noStore()
 	try {
+		performance.mark('start-fetch-latest-invoices')
 		const data = await sql<LatestInvoiceRaw>`
 			SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
 			FROM invoices
 			JOIN customers ON invoices.customer_id = customers.id
 			ORDER BY invoices.date DESC
 			LIMIT 5`
+		performance.mark('end-fetch-latest-invoices')
+		console.log(
+			`fetchLatestInvoices took ${
+				performance.measure(
+					'fetch-latest-invoices',
+					'start-fetch-latest-invoices',
+					'end-fetch-latest-invoices'
+				).duration
+			}ms`
+		)
 
 		const latestInvoices = data.rows.map((invoice) => ({
 			...invoice,
@@ -56,16 +77,28 @@ export async function fetchLatestInvoices() {
 }
 
 export async function fetchCardData() {
+	noStore()
 	try {
 		// You can probably combine these into a single SQL query
 		// However, we are intentionally splitting them to demonstrate
 		// how to initialize multiple queries in parallel with JS.
+		performance.mark('start-fetch-card-data')
 		const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`
 		const customerCountPromise = sql`SELECT COUNT(*) FROM customers`
 		const invoiceStatusPromise = sql`SELECT
          SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
          SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
          FROM invoices`
+		performance.mark('end-fetch-card-data')
+		console.log(
+			`fetchCardData took ${
+				performance.measure(
+					'fetch-card-data',
+					'start-fetch-card-data',
+					'end-fetch-card-data'
+				).duration
+			}ms`
+		)
 
 		const [invoiceCountResult, customerCountResult, invoiceStatusResult] =
 			await Promise.all([
@@ -102,6 +135,7 @@ export async function fetchFilteredInvoices(
 	query: string,
 	currentPage: number
 ) {
+	noStore()
 	const offset = (currentPage - 1) * ITEMS_PER_PAGE
 
 	try {
@@ -134,6 +168,7 @@ export async function fetchFilteredInvoices(
 }
 
 export async function fetchInvoicesPages(query: string) {
+	noStore()
 	try {
 		const count = await sql`SELECT COUNT(*)
     FROM invoices
@@ -157,6 +192,7 @@ export async function fetchInvoicesPages(query: string) {
 }
 
 export async function fetchInvoiceById(id: string) {
+	noStore()
 	try {
 		const data = await sql<InvoiceForm>`
       SELECT
