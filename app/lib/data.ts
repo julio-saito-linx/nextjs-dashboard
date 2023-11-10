@@ -10,6 +10,7 @@ import {
 } from './definitions'
 import { formatCurrency } from './utils'
 import { unstable_noStore as noStore } from 'next/cache'
+import { faker } from '@faker-js/faker'
 
 export const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`
 export const customerCountPromise = sql`SELECT COUNT(*) FROM customers`
@@ -23,7 +24,7 @@ export async function fetchRevenue() {
 		// Artificially delay a reponse for demo purposes.
 		// Don't do this in real life :)
 		performance.mark('start-fetch-revenue')
-		await new Promise((resolve) => setTimeout(resolve, 3000))
+		await new Promise((resolve) => setTimeout(resolve, 1500))
 		const data = await sql<Revenue>`SELECT * FROM revenue`
 		performance.mark('end-fetch-revenue')
 
@@ -274,5 +275,65 @@ export async function getUser(email: string) {
 	} catch (error) {
 		console.error('Failed to fetch user:', error)
 		throw new Error('Failed to fetch user.')
+	}
+}
+
+export async function addNewCustomer() {
+	try {
+		performance.mark('start-add-new-customer')
+		const data = await sql<CustomerField>`
+			INSERT INTO customers (name, email, image_url)
+			VALUES (${faker.person.fullName()}, ${faker.internet.email()}, 'https://engineering.unl.edu/images/staff/Kayla-Person.jpg')
+			RETURNING id, name, email, image_url
+		`
+		performance.mark('end-add-new-customer')
+		console.log(
+			`addNewCustomer took ${
+				performance.measure(
+					'add-new-customer',
+					'start-add-new-customer',
+					'end-add-new-customer'
+				).duration
+			}ms`
+		)
+
+		const customer = data.rows[0]
+		return customer
+	} catch (err) {
+		console.error('Database Error:', err)
+		throw new Error('Failed to add new customer.')
+	}
+}
+
+export async function addNewInvoice() {
+	try {
+		performance.mark('start-add-new-invoice')
+		const customers = await fetchCustomers()
+		// get a random customer
+		const customer = customers[Math.floor(Math.random() * customers.length)]
+
+		const data = await sql<InvoiceForm>`
+			INSERT INTO invoices (customer_id, amount, status, date)
+			VALUES (${customer.id}, ${Math.floor(
+				Math.random() * 1000
+			)}, 'pending', ${faker.date.recent().toISOString()})
+			RETURNING id
+		`
+		performance.mark('end-add-new-invoice')
+		console.log(
+			`addNewInvoice took ${
+				performance.measure(
+					'add-new-invoice',
+					'start-add-new-invoice',
+					'end-add-new-invoice'
+				).duration
+			}ms`
+		)
+
+		const invoice = data.rows[0]
+		return invoice
+	} catch (err) {
+		console.error('Database Error:', err)
+		throw new Error('Failed to add new invoice.')
 	}
 }

@@ -171,9 +171,31 @@ async function main() {
 	await client.end()
 }
 
-main().catch((err) => {
-	console.error(
-		'An error occurred while attempting to seed the database:',
-		err
-	)
-})
+async function dropAll() {
+	const client = await db.connect()
+
+	await client.sql`DROP TABLE IF EXISTS invoices`
+	await client.sql`DROP TABLE IF EXISTS customers`
+	await client.sql`DROP TABLE IF EXISTS revenue`
+	await client.sql`DROP TABLE IF EXISTS users`
+
+	await client.end()
+}
+
+// get shell params
+const args = process.argv.slice(2)
+const drop = args.includes('--drop')
+
+if (drop) {
+	dropAll()
+	console.log('Tables dropped')
+	process.exit(0)
+} else {
+	console.log('seeding...')
+	main().catch((err) => {
+		console.error(
+			'An error occurred while attempting to seed the database:',
+			err
+		)
+	})
+}

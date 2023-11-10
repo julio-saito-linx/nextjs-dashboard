@@ -6,14 +6,24 @@ import {
 	fetchRevenue,
 	fetchLatestInvoices,
 	fetchCardData,
+	// addNewCustomer,
+	// addNewInvoice,
 } from '@/app/lib/data'
 
 export default async function Page() {
 	// server-side data fetching
-	const [revenue, latestInvoices, cardData] = await Promise.all([
+	const [
+		revenue,
+		latestInvoices,
+		cardData,
+		// newCustomerResult,
+		// newInvoiceResult,
+	] = await Promise.all([
 		fetchRevenue(),
 		fetchLatestInvoices(),
 		fetchCardData(),
+		// addNewCustomer(),
+		// addNewInvoice(),
 	])
 
 	return (
