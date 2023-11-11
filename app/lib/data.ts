@@ -24,7 +24,7 @@ export async function fetchRevenue() {
 		// Artificially delay a reponse for demo purposes.
 		// Don't do this in real life :)
 		performance.mark('start-fetch-revenue')
-		await new Promise((resolve) => setTimeout(resolve, 2500))
+		await new Promise((resolve) => setTimeout(resolve, 500))
 		const data = await sql<Revenue>`SELECT * FROM revenue`
 		performance.mark('end-fetch-revenue')
 
@@ -49,6 +49,7 @@ export async function fetchLatestInvoices() {
 	noStore()
 	try {
 		performance.mark('start-fetch-latest-invoices')
+		await new Promise((resolve) => setTimeout(resolve, 800))
 		const data = await sql<LatestInvoiceRaw>`
 			SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
 			FROM invoices
@@ -100,6 +101,8 @@ export async function fetchCardData() {
 				).duration
 			}ms`
 		)
+
+		await new Promise((resolve) => setTimeout(resolve, 300))
 
 		const [invoiceCountResult, customerCountResult, invoiceStatusResult] =
 			await Promise.all([
